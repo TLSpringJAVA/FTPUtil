@@ -13,7 +13,10 @@ import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
 
 public class FtpUtilDemo {
-	 //ftp服务器地址
+	//家里ftp服务器地址
+//    public String hostname = "192.168.2.236";
+    
+    //公司ftp服务器地址
     public String hostname = "192.168.2.236";
     //ftp服务器端口号默认为21
     public Integer port = 21 ;
@@ -296,7 +299,7 @@ public class FtpUtilDemo {
     
     public static void main(String[] args) {
         FtpUtilDemo ftp =new FtpUtilDemo(); 
-        ftp.uploadFile("/test2", "localhost.keystore", "D://localhost.keystore");
+        ftp.uploadFile("", "localhost.keystore", "D://localhost.keystore");
         //ftp.downloadFile("ftpFile/data", "123.docx", "F://");
         //ftp.deleteFile("ftpFile/data", "123.docx");
         System.out.println("ok");
