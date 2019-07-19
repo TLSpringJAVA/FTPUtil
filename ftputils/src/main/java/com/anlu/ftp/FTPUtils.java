@@ -1,13 +1,12 @@
 package com.anlu.ftp;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.SocketException;
+import java.util.ArrayList;
 
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPReply;
+import org.apache.commons.net.ftp.FTPFile;
 
 import net.coobird.thumbnailator.Thumbnails;
 
@@ -19,10 +18,27 @@ public class FTPUtils {
 	private static FTPUtils instance = null;
     private static FTPClient ftpClient = null;
     private String cache_dir = "e:/cache/";//用于压缩图片
+	public ArrayList<String> arFiles = new ArrayList<>();//用于列出某目录的所有文件
     private String server = "192.168.2.236";
     private int port = 21;
     private String userName = "anlutest1";
     private String userPassword = "123";
+	
+	public void setServer(String server) {
+        this.server = server;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public void setUserPassword(String userPassword) {
+        this.userPassword = userPassword;
+    }
     
     public static  void main(String[] args){
     	FTPUtils utils = FTPUtils.getInstance();
@@ -31,6 +47,8 @@ public class FTPUtils {
     		//utils.upload("ftpFile/data", "changeLog.txt", "D://changeLog.txt");
         	boolean result= utils.upload("changeLog.txt", "/test2", "D://changeLog.txt");
         	System.out.println("上传结果:"+result);
+			
+			utils.downDirFiles("/exam/","D:/1","dcm","jpg");
     	}
     	
     }
@@ -115,6 +133,38 @@ public class FTPUtils {
 	   }
    }
    
+    /**
+     * 下载单文件
+     * @param pathName ftp完整文件名
+     * @param localPath 下载到本地目标目录
+     * @throws FileNotFoundException
+     */
+    public void downFile(String pathName,String localPath) throws IOException {
+        File localFile = new File(localPath+pathName);
+        File parent = localFile.getParentFile(); // 获取父文件
+
+        if( !parent.exists() ) parent.mkdirs(); //创建所有父文件夹
+            localFile.createNewFile();
+            OutputStream os = new FileOutputStream(localFile);
+            ftpClient.retrieveFile(new String(pathName.getBytes(),"ISO-8859-1"),os);
+            System.out.println("文件："+localPath+pathName+" 下载成功");
+            os.close();
+
+    }
+	
+	/**
+     * 下载指定目录下所有文件
+     * @param dirName 开头结尾为“/”的完整ftp路径
+     * @param localPath 下载到本地目标路径
+     * @param ext 文件扩展名
+     */
+    public void downDirFiles(String dirName,String localPath,String... ext) throws IOException {
+        this.arFiles.clear();
+        List(dirName,ext);
+        for(String pathName : arFiles){
+            downFile(pathName,localPath);
+        }
+    }
    
    /**
     * 上传文件到FTP服务器
@@ -334,5 +384,33 @@ public class FTPUtils {
 			return false;
 		}
    }
+   
+    /**
+     * 递归遍历目录下面指定的文件名
+     *
+     * @param pathName 需要遍历的目录，必须以"/"开始和结束，调用前执行下 arFiles.clear()
+     * @param ext      文件的扩展名
+     * @throws IOException
+     */
+    public void List(String pathName, String... ext) throws IOException {
+        if (pathName.startsWith("/") && pathName.endsWith("/")) {
+            //更换目录到当前目录
+            this.ftpClient.changeWorkingDirectory(pathName);
+            FTPFile[] files = this.ftpClient.listFiles();
+            for (FTPFile file : files) {
+                if (file.isFile()) {
+                    for(int i=0;i < ext.length;i++){
+                        if (file.getName().endsWith(ext[i])) {
+                            arFiles.add(pathName + file.getName());
+                        }
+                    }
+                } else if (file.isDirectory()) {
+                    if (!".".equals(file.getName()) && !"..".equals(file.getName())) {
+                        List(pathName + file.getName() + "/", ext);
+                    }
+                }
+            }
+        }
+    }
    
 }
